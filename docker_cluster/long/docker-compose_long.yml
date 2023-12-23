@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  long_tourist_bot:
+    image: "keks/tourist-bot:1.0"
+    container_name: long_tourist_bot
+    hostname: tourist-bot
+    environment:
+      - CONF_PATH=/bot_conf/bot_conf.yaml
+      - SERVER=LONG
+      - TELE_BOT_REDIS_HOST=redis-bot
+      - TELE_BOT_REDIS_PORT=6379
+      - TELE_BOT_APP_GEO_JSON_PATH=/bot_conf/tourist_places.geojson
+      - TELE_BOT_APP_TOKEN=
+      - JVM_ARGS=-Dlog_dir=/var/logs/
+    volumes:
+      - ./volume/bot/conf/:/bot_conf
+      - ./volume/bot/data/:/var/logs/
+    networks:
+      - tourist-long-bot-net
+
+  long_redis_bot:
+    image: 'bitnami/redis:latest'
+    container_name: long_redis_bot
+    hostname: redis-bot
+    environment:
+      - REDIS_PORT_NUMBER=6379
+      - REDIS_PASSWORD=redis
+      - REDIS_AOF_ENABLED=no
+    networks:
+     - tourist-long-bot-net
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+
+networks:
+  tourist-long-bot-net:
+    name: tourist-long-bot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 11.1.0.0/28 # 13 hosts. '11.5.0.1' is reserved for gateway

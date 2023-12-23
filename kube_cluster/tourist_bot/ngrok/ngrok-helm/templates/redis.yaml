@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngrok-redis-deploy-h
+  labels:
+    app: ngrok-redis-app-h
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngrok-redis-app-h
+  template:
+    metadata:
+      labels:
+        app: ngrok-redis-app-h
+    spec:
+      containers:
+        - name: redis
+          image: 'bitnami/redis:7.0.0'
+          ports:
+            - containerPort: {{ .Values.redis.port }}
+          env:
+            - name: REDIS_PASSWORD
+              value: {{ .Values.redis.pass }}
+            - name: REDIS_AOF_ENABLED
+              value: 'no'
+            - name: REDIS_PORT_NUMBER
+              value: '{{ .Values.redis.port }}'
+          args: ["/opt/bitnami/scripts/redis/run.sh", "--maxmemory", "100mb"]
+          volumeMounts:
+            - name: bot-volume
+              mountPath: /volume/ngrok
+              subPath: ngrok
+      volumes:
+        - name: bot-volume
+          persistentVolumeClaim:
+            claimName: ngrok-pvc-h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service-h
+spec:
+  selector:
+    app: ngrok-redis-app-h
+  type: ClusterIP
+  ports:
+    - name: redis-port
+      protocol: TCP
+      port: {{ .Values.redis.port }}
+      targetPort: {{ .Values.redis.port }}

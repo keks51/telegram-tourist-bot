@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: static-bot-deploy-h
+  labels:
+    app: static-bot-app-h
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: static-bot-app-h
+  template:
+    metadata:
+      labels:
+        app: static-bot-app-h
+    spec:
+      containers:
+        - name: static-bot
+          image: keks/tourist-bot:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: {{ .Values.bot.port }}
+          env:
+            - name: TELE_BOT_APP_TOKEN
+              value: '{{ .Values.bot.token }}'
+            - name: CONF_PATH
+              value: {{ .Values.bot.conf_path }}
+            - name: SERVER
+              value: 'HOOK'
+            - name: TELE_BOT_REDIS_HOST
+              value: redis-service-h
+            - name: TELE_BOT_REDIS_PORT
+              value: '{{ .Values.redis.port }}'
+            - name: TELE_BOT_APP_GEO_JSON_PATH
+              value: {{ .Values.bot.geo_json_path }}
+            - name: JVM_ARGS
+              value: '-Dlog_dir=/volume/bot/data/logs/'
+            - name:  TELE_BOT_WEBHOOK_LOCAL_HOST_WEB_HOOK_URL
+              value: https://0.0.0.0:{{ .Values.bot.port }}
+            - name: TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL
+              value: '{{ .Values.bot.public_host_web_hook_url }}'
+            - name: TELE_BOT_WEBHOOK_PUBLIC_PEM_PATH
+              value: '{{ .Values.bot.public_pem_path }}'
+            - name: TELE_BOT_WEBHOOK_KEY_STORE_PATH
+              value: '{{ .Values.bot.key_store_path }}'
+            - name: TELE_BOT_WEBHOOK_KEY_STORE_PASSWORD
+              value: '{{ .Values.bot.key_store_password }}'
+          volumeMounts:
+            - name: bot-volume
+              mountPath: /volume
+          resources:
+            limits:
+              memory: 1000Mi
+              cpu: 1000m
+            requests:
+              cpu: "500m"
+              memory: 100Mi
+      volumes:
+        - name: bot-volume
+          persistentVolumeClaim:
+            claimName: static-pvc-h
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot-service-h
+spec:
+  selector:
+    app: static-bot-app-h
+  type: LoadBalancer
+  externalIPs:
+    - '{{ .Values.kube_host_ip }}'
+  ports:
+    - name: bot-https-port
+      protocol: TCP
+      port: {{ .Values.bot.port }}
+      targetPort: {{ .Values.bot.port }}

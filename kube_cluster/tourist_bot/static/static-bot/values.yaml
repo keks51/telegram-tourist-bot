@@ -1,0 +1,19 @@
+# path to volume
+pv_path:
+
+# host ip like 192.168.0.9
+kube_host_ip:
+
+bot:
+  conf_path: /volume/bot/conf/bot_conf.yaml
+  geo_json_path: /volume/bot/conf/tourist_places.geojson
+  token:
+  port: 8070
+  public_host_web_hook_url: https://SET_ROUTER_IP:8443
+  public_pem_path: /volume/ssl/YOURPUBLIC.pem
+  key_store_path: /volume/ssl/cert.jks
+  key_store_password:
+
+redis:
+  port: '6379'
+  pass: redis

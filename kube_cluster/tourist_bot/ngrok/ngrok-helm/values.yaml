@@ -1,0 +1,16 @@
+# path to volume
+pv_path:
+
+bot:
+  conf_path: /bot/conf/bot_conf.yaml
+  geo_json_path: /bot/conf/tourist_places.geojson
+  token:
+  port: 8080
+
+redis:
+  port: '6379'
+  pass: redis
+
+ngrok:
+  port: 4040
+  auth_token:

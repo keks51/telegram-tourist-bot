@@ -1,0 +1,44 @@
+[
+  {
+    "id": 0,
+    "tourismType": "MUSEUM",
+    "lon": 30,
+    "lat": 15,
+    "lanNameMap": {
+      "RU": "Комендантский дом",
+      "EN": "Commandant's House"
+    },
+    "lanDescMap" : {
+      "EN" : "",
+      "RU" : ""
+    }
+  },
+  {
+    "id": 1,
+    "tourismType": "MUSEUM",
+    "lon": 15,
+    "lat": 30,
+    "lanNameMap": {
+      "RU": "Михайловский замок",
+      "EN": "Saint Michael's Castle"
+    },
+    "lanDescMap" : {
+      "EN" : "",
+      "RU" : ""
+    }
+  },
+  {
+    "id": 2,
+    "tourismType": "MUSEUM",
+    "lon": 15,
+    "lat": 15,
+    "lanNameMap": {
+      "RU": "Мраморный дворец",
+      "EN": "Marble Palace"
+    },
+    "lanDescMap" : {
+      "EN" : "",
+      "RU" : ""
+    }
+  }
+]

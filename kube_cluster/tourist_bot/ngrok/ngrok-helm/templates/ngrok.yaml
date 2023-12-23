@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngrok-ngrok-deploy-h
+  labels:
+    app: ngrok-ngrok-app-h
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngrok-ngrok-app-h
+  template:
+    metadata:
+      labels:
+        app: ngrok-ngrok-app-h
+    spec:
+      containers:
+        - name: ngrok
+          image: ngrok/ngrok:latest
+          ports:
+            - containerPort: {{ .Values.ngrok.port }}
+          args:
+            ["start",
+            "--all",
+            "--config",
+            "/ngrok/conf/ngrok.yml"]
+          env:
+            - name: NGROK_CONFIG
+              value: /ngrok/conf/ngrok.yml
+            - name: NGROK_AUTHTOKEN
+              value: '{{ .Values.ngrok.auth_token }}'
+          volumeMounts:
+            - name: ngrok-volume
+              mountPath: /ngrok
+              subPath: ngrok
+      volumes:
+        - name: ngrok-volume
+          persistentVolumeClaim:
+            claimName: ngrok-pvc-h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ngrok-service-h
+spec:
+  selector:
+    app: ngrok-ngrok-app-h
+  type: ClusterIP
+  ports:
+    - name: ngrok-port
+      protocol: TCP
+      port: {{ .Values.ngrok.port }}
+      targetPort: {{ .Values.ngrok.port }}

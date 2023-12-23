@@ -1,0 +1,95 @@
+version: "3.9"
+
+x-default-bot: &default-tourist-bot
+  image: "keks/tourist-bot:1.0"
+  environment:
+    - CONF_PATH=/bot_conf/bot_conf.yaml
+    - SERVER=HOOK
+    - TELE_BOT_REDIS_HOST=redis-bot
+    - TELE_BOT_REDIS_PORT=6379
+    - TELE_BOT_APP_GEO_JSON_PATH=/bot_conf/tourist_places.geojson
+    - JVM_ARGS=-Dlog_dir=/var/logs/
+    - TELE_BOT_WEBHOOK_LOCAL_HOST_WEB_HOOK_URL=http://0.0.0.0:8080
+    - TELE_BOT_APP_TOKEN=
+  entrypoint:
+    - "/bin/sh"
+    - -ecx
+    - |
+      export TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL=$(curl -s http://ngrok-bot:4040/api/tunnels | jq -r '.tunnels[0].public_url'):443
+      ./docker-entrypoint.sh
+  networks:
+    - tourist-ngrok-bot-net
+  depends_on:
+    - ngrok_ngrok_bot
+
+services:
+  ngrok_tourist_bot1:
+    <<: *default-tourist-bot
+    container_name: ngrok_tourist_bot1
+    hostname: tourist-bot1
+    volumes:
+      - ./volume/bot/conf/:/bot_conf
+      - ./volume/bot/data/bot1/:/var/logs/
+
+  ngrok_tourist_bot2:
+    <<: *default-tourist-bot
+    container_name: ngrok_tourist_bot2
+    hostname: tourist-bot2
+    volumes:
+      - ./volume/bot/conf/:/bot_conf
+      - ./volume/bot/data/bot2/:/var/logs/
+
+  ngrok_nginx_bot:
+    image: nginx
+    container_name: ngrok_nginx_bot
+    hostname: nginx-bot
+    environment:
+      TZ: "Europe/Moscow"
+    networks:
+      - tourist-ngrok-bot-net
+    volumes:
+      - ./volume/nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+      - ./volume/nginx/data/logs:/var/log/nginx/
+    depends_on:
+      - ngrok_tourist_bot1
+      - ngrok_tourist_bot2
+      - ngrok_ngrok_bot
+
+  ngrok_ngrok_bot:
+    container_name: ngrok_ngrok_bot
+    hostname: ngrok-bot
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    environment:
+      - NGROK_AUTHTOKEN=
+    command:
+      - "start"
+      - "--all"
+      - "--config"
+      - "/conf/ngrok.yml"
+    volumes:
+      - ./volume/ngrok/conf/:/conf/
+    ports:
+      - "4040:4040"
+    networks:
+      - tourist-ngrok-bot-net
+
+  ngrok_redis_bot:
+    image: 'bitnami/redis:latest'
+    container_name: ngrok_redis_bot
+    hostname: redis-bot
+    environment:
+      - REDIS_PORT_NUMBER=6379
+      - REDIS_PASSWORD=redis
+      - REDIS_AOF_ENABLED=no
+    networks:
+     - tourist-ngrok-bot-net
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+
+networks:
+  tourist-ngrok-bot-net:
+    name: tourist-ngrok-bot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 11.2.0.0/28 # 13 hosts. '11.5.0.1' is reserved for gateway

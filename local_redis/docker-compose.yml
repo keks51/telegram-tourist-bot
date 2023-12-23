@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  redis-bot-local:
+    image: 'bitnami/redis:latest'
+    hostname: redis-bot-local
+    container_name: redis-bot-local
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PORT_NUMBER=6379
+      - REDIS_PASSWORD=redis
+      - REDIS_AOF_ENABLED=no
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb

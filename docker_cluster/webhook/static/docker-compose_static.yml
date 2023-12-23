@@ -1,0 +1,76 @@
+version: "3.9"
+
+x-default-bot: &default-tourist-bot
+  image: "keks/tourist-bot:1.0"
+  environment:
+    - CONF_PATH=/bot_conf/bot_conf.yaml
+    - SERVER=HOOK
+    - TELE_BOT_REDIS_HOST=redis-bot
+    - TELE_BOT_REDIS_PORT=6379
+    - TELE_BOT_APP_GEO_JSON_PATH=/bot_conf/tourist_places.geojson
+    - JVM_ARGS=-Dlog_dir=/var/logs/
+    - TELE_BOT_WEBHOOK_LOCAL_HOST_WEB_HOOK_URL=https://0.0.0.0:8080
+    - TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL=https://SET_ROUTER_IP:8443
+    - TELE_BOT_WEBHOOK_PUBLIC_PEM_PATH=/bot_conf/ssl/YOURPUBLIC.pem
+    - TELE_BOT_WEBHOOK_KEY_STORE_PATH=/bot_conf/ssl/cert.jks
+    - TELE_BOT_WEBHOOK_KEY_STORE_PASSWORD=
+    - TELE_BOT_APP_TOKEN=
+  networks:
+    - tourist-static-bot-net
+
+services:
+  static_tourist_bot1:
+    <<: *default-tourist-bot
+    container_name: static_tourist_bot1
+    hostname: tourist-bot1
+    volumes:
+      - ./volume/ssl/:/bot_conf/ssl
+      - ./volume/bot/conf/:/bot_conf
+      - ./volume/bot/data/bot1/:/var/logs/
+
+  static_tourist_bot2:
+    <<: *default-tourist-bot
+    container_name: static_tourist_bot2
+    hostname: tourist-bot2
+    volumes:
+      - ./volume/ssl/:/bot_conf/ssl
+      - ./volume/bot/conf/:/bot_conf
+      - ./volume/bot/data/bot2/:/var/logs/
+
+  static_nginx_bot:
+    image: nginx
+    container_name: static_nginx_bot
+    hostname: nginx-bot
+    environment:
+      TZ: "Europe/Moscow"
+    ports:
+      - "8070:8070"
+    networks:
+      - tourist-static-bot-net
+    volumes:
+      - ./volume/ssl/:/conf/ssl
+      - ./volume/nginx/conf/nginx_ssl.conf:/etc/nginx/nginx.conf
+      - ./volume/nginx/data/logs:/var/log/nginx/
+    depends_on:
+      - static_tourist_bot1
+      - static_tourist_bot2
+
+  static_redis_bot:
+    image: 'bitnami/redis:latest'
+    container_name: static_redis_bot
+    hostname: redis-bot
+    environment:
+      - REDIS_PORT_NUMBER=6379
+      - REDIS_PASSWORD=redis
+      - REDIS_AOF_ENABLED=no
+    networks:
+     - tourist-static-bot-net
+    command: /opt/bitnami/scripts/redis/run.sh --maxmemory 100mb
+
+networks:
+  tourist-static-bot-net:
+    name: tourist-static-bot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 11.3.0.0/28 # 13 hosts. '11.5.0.1' is reserved for gateway

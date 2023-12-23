@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ngrok-bot-deploy-h
+  labels:
+    app: ngrok-bot-app-h
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ngrok-bot-app-h
+  template:
+    metadata:
+      labels:
+        app: ngrok-bot-app-h
+    spec:
+      containers:
+        - name: bot
+          image: keks/tourist-bot:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: {{ .Values.bot.port }}
+          env:
+            - name: TELE_BOT_APP_TOKEN
+              value: '{{ .Values.bot.token }}'
+            - name: CONF_PATH
+              value: {{ .Values.bot.conf_path }}
+            - name: SERVER
+              value: 'HOOK'
+            - name: TELE_BOT_REDIS_HOST
+              value: redis-service-h
+            - name: TELE_BOT_REDIS_PORT
+              value: '{{ .Values.redis.port }}'
+            - name: TELE_BOT_APP_GEO_JSON_PATH
+              value: {{ .Values.bot.geo_json_path }}
+            - name: JVM_ARGS
+              value: '-Dlog_dir=/bot/data/logs/'
+            - name: TELE_BOT_WEBHOOK_LOCAL_HOST_WEB_HOOK_URL
+              value: http://0.0.0.0:{{ .Values.bot.port }}
+          command: [ "/bin/sh" ]
+          args: [ "-c","while : ; do sleep 1; echo \"connecting to 'ngrok-service-h'\" ; export TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL=$(curl -s http://ngrok-service-h:4040/api/tunnels | jq -r '.tunnels[0].public_url'):443;   if [ \"$TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL\" != \":443\" ] ; then echo \"NgrokUrl: ${TELE_BOT_WEBHOOK_PUBLIC_HOST_WEBHOOK_URL}\" ;  break ; fi ;          done;./docker-entrypoint.sh" ]
+          volumeMounts:
+            - name: bot-volume
+              mountPath: /bot
+              subPath: bot
+          resources:
+            limits:
+              memory: 1000Mi
+              cpu: 1000m
+            requests:
+              cpu: "500m"
+              memory: 100Mi
+      volumes:
+        - name: bot-volume
+          persistentVolumeClaim:
+            claimName: ngrok-pvc-h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bot-service-h
+spec:
+  selector:
+    app: ngrok-bot-app-h
+  type: ClusterIP
+  ports:
+    - name: bot-http-port
+      protocol: TCP
+      port: {{ .Values.bot.port }}
+      targetPort: {{ .Values.bot.port }}

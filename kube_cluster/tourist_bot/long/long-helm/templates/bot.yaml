@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: long-bot-deploy-h
+  labels:
+    app: long-bot-app-h
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: long-bot-app-h
+  template:
+    metadata:
+      labels:
+        app: long-bot-app-h
+    spec:
+      containers:
+        - name: long-bot
+          image: keks/tourist-bot:1.0
+          imagePullPolicy: Never
+          env:
+            - name: TELE_BOT_APP_TOKEN
+              value: '{{ .Values.bot.token }}'
+            - name: CONF_PATH
+              value: {{ .Values.bot.conf_path }}
+            - name: SERVER
+              value: 'LONG'
+            - name: TELE_BOT_REDIS_HOST
+              value: redis-service-h
+            - name: TELE_BOT_REDIS_PORT
+              value: '{{ .Values.redis.port }}'
+            - name: TELE_BOT_APP_GEO_JSON_PATH
+              value: {{ .Values.bot.geo_json_path }}
+            - name: JVM_ARGS
+              value: '-Dlog_dir=/bot/data/logs/'
+          volumeMounts:
+            - name: bot-volume
+              mountPath: /bot
+              subPath: bot
+      volumes:
+        - name: bot-volume
+          persistentVolumeClaim:
+            claimName: long-pvc-h
