@@ -59,7 +59,7 @@ sequenceDiagram
 
 ![](./draw_io/long_polling_design.png)
 
-Since Router doesn't need any configuration we can skip communication with him
+Since Router doesn't need any configuration we can skip communication with it
 
 ```mermaid
 sequenceDiagram
